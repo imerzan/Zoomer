@@ -41,26 +41,26 @@ namespace Zoomer
                 MessageBox.Show(ex.ToString(), Globals.WindowTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private async void Form1_Resize(object sender, EventArgs e) // Hide GUI when minimized
+        private void Form1_Resize(object sender, EventArgs e) // Hide GUI when minimized
         {
             if (this.WindowState == FormWindowState.Minimized) GuiShow(false);
         }
         // NotifyIcon
-        private async void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) // Tray icon double click - restore GUI
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) // Tray icon double click - restore GUI
         {
             this.GuiShow(true);
         }
-        private async void openToolStripMenuItem_Click(object sender, EventArgs e) // Tray 'open' menu item click - restore GUI
+        private void openToolStripMenuItem_Click(object sender, EventArgs e) // Tray 'open' menu item click - restore GUI
         {
             this.GuiShow(true);
         }
 
         private async void wakeToolStripMenuItem_Click(object sender, EventArgs e) // Tray 'wake' menu item click - send WakeOnLan broadcast
         {
-            this.Config.WOL.Send();
+            await this.Config.WOL.Send();
         }
 
-        private async void exitToolStripMenuItem_Click(object sender, EventArgs e) // Tray 'exit' menu item click - Exit GUI/Program
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e) // Tray 'exit' menu item click - Exit GUI/Program
         {
             this.notifyIcon1.Visible = false;
             Application.Exit();
@@ -87,9 +87,9 @@ namespace Zoomer
             await this.Config.Uninstall();
             this.GuiUpdate();
         }
-        private void button_WOLSend_Click(object sender, EventArgs e) // GUI Wake On Lan 'Send' button click - send WakeOnLan broadcast
+        private async void button_WOLSend_Click(object sender, EventArgs e) // GUI Wake On Lan 'Send' button click - send WakeOnLan broadcast
         {
-            this.Config.WOL.Send();
+            await this.Config.WOL.Send();
         }
         private void button_Hotkeys_Click(object sender, EventArgs e) // Loads GUI for Hotkey Editor
         {

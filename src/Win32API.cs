@@ -4,8 +4,9 @@ using System.Threading.Tasks;
 
 namespace Zoomer
 {
-    internal static class Win32API
+    internal static class Win32API // Methods from the Win32 API
     {
+        // Win32 Consts
         private const uint KEYEVENTF_KEYUP = 0x0002;
         private const uint ES_CONTINUOUS = 0x80000000;
         private const uint ES_SYSTEM_REQUIRED = 0x00000001;
@@ -18,15 +19,15 @@ namespace Zoomer
 
         [DllImport("user32.dll")]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo); // keybd_event() Pinvoke
-        public static async void SendKey(byte key, int delay) // Wrapper function for keybd_event() Pinvoke
+        public static async void SendKey(byte key, int delay) // Wrapper method for keybd_event() Pinvoke
         {
             keybd_event(key, 0, 0, 0); // Keydown
-            await Task.Delay(delay); // Keydown delay in ms
+            await Task.Delay(delay); // Keydown delay in ms, non thread blocking
             keybd_event(key, 0, KEYEVENTF_KEYUP, 0); // Keyup
         }
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)] // SetThreadExecutionState() Pinvoke
         private static extern uint SetThreadExecutionState(uint esFlags);
-        public static void PreventSleep()
+        public static void PreventSleep() // Wrapper method for SetThreadExecutionState() Pinvoke
         {
             SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
         }

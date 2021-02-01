@@ -6,7 +6,7 @@ namespace Zoomer
 {
     static class Program
     {
-        private static Mutex mutex; // Static mutex won't be GC
+        private static Mutex mutex;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -14,7 +14,7 @@ namespace Zoomer
         static void Main()
         {
             bool createdNew;
-            mutex = new Mutex(true, "c7340164-ac54-4442-bca8-bfb2c2d95945", out createdNew); // Create new Mutex, only allow one instance of program to be running.
+            Program.mutex = new Mutex(true, "c7340164-ac54-4442-bca8-bfb2c2d95945", out createdNew); // Create new Mutex, only allow one instance of program to be running.
             if (!createdNew) // Program is already running! Abort startup
             {
                 MessageBox.Show("The Application Is Already Running", Globals.WindowTitle, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);

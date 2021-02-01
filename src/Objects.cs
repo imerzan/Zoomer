@@ -23,16 +23,14 @@ namespace Zoomer
         private ZoomerServer Server { get; set; }
         public WakeOnLan WOL { get; private set; }
         public Dictionary<byte, Hotkey> Hotkeys { get; private set; } // Active Hotkey List
-        public static List<Hotkey> HotkeyEditorList; // Static , accessible between classes.
-        private IntPtr Hwnd; // Main window handle
+        private IntPtr Handle; // Main window handle passed from Zoomer.cs
         private List<int> HotkeyIds; // Hotkey IDs currently bound by WIN32 API
-        public ZoomerConfig(IntPtr handle)
+        public ZoomerConfig(IntPtr hwnd)
         {
             this.IsReady = false;
-            this.Hwnd = handle;
+            this.Handle = hwnd;
             this.Port = 0;
             this.Mode = "CLIENT";
-            this.Hotkeys = new Dictionary<byte, Hotkey>();
             this.LoadConfig();
         }
         private void LoadConfig() // Read existing configuration (if exists) from Registry.
@@ -48,7 +46,7 @@ namespace Zoomer
                     this.Mode = (string)read.GetValue("lastmode");
                     read.Close();
                 }
-                using (RegistryKey hotkeys = Registry.CurrentUser.OpenSubKey(Globals.RegPath + "\\hotkeys")) // Get hotkey config
+                using (RegistryKey hotkeys = Registry.CurrentUser.OpenSubKey(Globals.RegPath + @"\Hotkeys")) // Get hotkey config
                 {
                     if (hotkeys != null)
                     {
@@ -61,9 +59,9 @@ namespace Zoomer
                             if (split.Length == 2) // Make sure within bounds
                             {
                                 int hotkey, action;
-                                if (!int.TryParse(split[0], out hotkey)) break;
-                                if (!int.TryParse(split[1], out action)) break;
-                                Hotkeys.Add((byte)hotkey, new Hotkey(new Key((byte)hotkey), new Key((byte)action))); // Add to Zoomer.Hotkeys config
+                                if (!int.TryParse(split[0], out hotkey)) break; // Invalid, exit if
+                                if (!int.TryParse(split[1], out action)) break; // Invalid, exit if
+                                this.Hotkeys.Add((byte)hotkey, new Hotkey(new Key((byte)hotkey), new Key((byte)action))); // Valid, Add to Main Hotkeys Dict
                             }
                         }
                         hotkeys.Close();
@@ -78,10 +76,10 @@ namespace Zoomer
             }
             finally
             {
-                this.Ready();
+                this.SetState();
             }
         }
-        private void SetHotkeys(bool IsEnabled) // Set Hotkeys
+        private void SetHotkeys(bool HotkeysEnabled) // Set Hotkeys
         {
             try
             {
@@ -89,21 +87,20 @@ namespace Zoomer
                 {
                     foreach (int id in this.HotkeyIds)
                     {
-                        Win32API.UnregisterHotKey(this.Hwnd, id);
+                        Win32API.UnregisterHotKey(this.Handle, id);
                     }
-                    this.HotkeyIds = new List<int>();
                 }
-                switch (IsEnabled)
+                this.HotkeyIds = new List<int>(); // Empty hotkey IDs List
+                switch (HotkeysEnabled)
                 {
-                    case true:
-                        this.HotkeyIds = new List<int>();
-                        foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys)
+                    case true: // register hotkeys
+                        if (this.Hotkeys != null) foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys)
                         {
-                            Win32API.RegisterHotKey(this.Hwnd, (int)entry.Key, 0, (int)entry.Key);
+                            Win32API.RegisterHotKey(this.Handle, (int)entry.Key, 0, (int)entry.Key);
                             this.HotkeyIds.Add((int)entry.Key);
                         }
                         break;
-                    case false:
+                    case false: // hotkeys already unreg'd , do nothing
                         break;
                 }
             }
@@ -113,37 +110,26 @@ namespace Zoomer
                 MessageBox.Show(ex.ToString(), Globals.WindowTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        public void Ready() // Sets Client/Server State
+        private void SetState() // Sets Client/Server State
         {
             try
             {
-                this.WOL = new WakeOnLan(this.WOL_MacAddress); // WOL enabled for both modes
                 this.Server?.Stop(); // Stop existing server (if any)
-                switch (this.Mode)
+                if (!this.IsReady) this.SetHotkeys(false); // Un-reg hotkeys if not ready
+                else // Is Ready
                 {
-                    case "CLIENT":
-                        if (this.IsReady)
-                        {
-                            
+                    this.WOL = new WakeOnLan(this.WOL_MacAddress); // WOL enabled for both modes
+                    switch (this.Mode)
+                    {
+                        case "CLIENT":
                             this.SetHotkeys(true);
                             this.Client = new ZoomerClient(this.IpAddress, this.Port);
-                        }
-                        else
-                        {
-                            this.SetHotkeys(false);
-                        }
-                        break;
-                    case "SERVER":
-                        if (this.IsReady)
-                        {
+                            break;
+                        case "SERVER":
                             this.SetHotkeys(false);
                             this.Server = new ZoomerServer(this.Port);
-                        }
-                        else
-                        {
-                            this.SetHotkeys(false);
-                        }
-                        break;
+                            break;
+                    }
                 }
             }
             catch (Exception ex) // Handle general exceptions, show exception info to user.
@@ -169,24 +155,24 @@ namespace Zoomer
                     write.SetValue("lastmode", this.Mode);
                     write.Close();
                 }
-                using (RegistryKey hotkeys = Registry.CurrentUser.CreateSubKey(Globals.RegPath + "\\hotkeys")) // Save hotkey configuration
+                using (RegistryKey hotkeys = Registry.CurrentUser.CreateSubKey(Globals.RegPath + @"\Hotkeys")) // Save hotkey configuration
                 {
                     string[] allvalues = hotkeys.GetValueNames();
                     foreach (string value in allvalues) // Delete old hotkeys
                     {
                         hotkeys.DeleteValue(value);
                     }
-                    int i = 1;
-                    if (ZoomerConfig.HotkeyEditorList?.Count > 0)
+                    if (Globals.HotkeyEditorList?.Count > 0) // Editor list has new entries, push these first
                     {
                         this.Hotkeys = new Dictionary<byte, Hotkey>();
-                        foreach (Hotkey hotkey in ZoomerConfig.HotkeyEditorList) this.Hotkeys.Add(hotkey.hotkey.Value, hotkey);
-                        ZoomerConfig.HotkeyEditorList = new List<Hotkey>();
+                        foreach (Hotkey hotkey in Globals.HotkeyEditorList) this.Hotkeys.Add(hotkey.hotkey.Value, hotkey); // Push entries to main hotkey dict
+                        Globals.HotkeyEditorList = new List<Hotkey>(); // All Done - Empty Editor List
                     }
-                    if (this.Hotkeys != null) foreach (KeyValuePair<byte, Hotkey> entry in Hotkeys) // Write new hotkeys
+                    int i = 1;
+                    if (this.Hotkeys != null) foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys) // Write new hotkeys
                         {
                             hotkeys.SetValue(i.ToString(), entry.Key.ToString() + "," + entry.Value.action.Value.ToString()); // Delimit Hotkey & Action by comma
-                            i += 1;
+                            i++;
                         }
                     hotkeys.Close();
                 }
@@ -199,7 +185,7 @@ namespace Zoomer
             }
             finally
             {
-                this.Ready();
+                this.SetState();
             }
         }
         public async Task Uninstall() // Remove current configuration, and delete from Registry.
@@ -208,7 +194,7 @@ namespace Zoomer
             {
                 using (RegistryKey delete = Registry.CurrentUser)
                 {
-                    delete.DeleteSubKey(Globals.RegPath + "\\hotkeys"); // Remove hotkeys subkey first, cannot recursively delete
+                    delete.DeleteSubKey(Globals.RegPath + @"\Hotkeys"); // Remove hotkeys subkey first, cannot recursively delete
                     delete.DeleteSubKey(Globals.RegPath);
                     delete.Close();
                 }
@@ -217,7 +203,7 @@ namespace Zoomer
                 this.WOL_MacAddress = null;
                 this.Mode = "CLIENT";
                 this.Hotkeys = new Dictionary<byte, Hotkey>();
-                ZoomerConfig.HotkeyEditorList = new List<Hotkey>();
+                Globals.HotkeyEditorList = new List<Hotkey>();
                 this.IsReady = false;
             }
             catch (Exception ex) // Handle general exceptions, show exception info to user.
@@ -227,7 +213,7 @@ namespace Zoomer
             }
             finally
             {
-                this.Ready();
+                this.SetState();
             }
         }
     }
@@ -276,7 +262,7 @@ namespace Zoomer
                     buffer = this.Server.Receive(ref this.Endpoint); // Listen on bound port for UDP Datagrams
                     if (int.TryParse(Encoding.ASCII.GetString(buffer), out key)) // Make sure received data is valid ActionKey
                     {
-                        Win32API.SendKey((byte)key, 50); // Send ActionKey keypress as requested by the client
+                        Win32API.SendKey((byte)key, 50); // Send ActionKey keypress as requested by the client, 50ms key delay
                     }
                 }
             }
@@ -296,7 +282,7 @@ namespace Zoomer
         {
             this.MacAddress = mac;
         }
-        public void Send() // Broadcasts Magic Packet based on provided MAC Address to UDP Port 9 to wake computer(s) from sleep.
+        public async Task Send() // Broadcasts Magic Packet based on provided MAC Address to UDP Port 9 to wake computer(s) from sleep.
         {
             try
             {

@@ -30,10 +30,10 @@ namespace Zoomer
             }
         }
         // Button Controls
-        private void button_Apply_Click(object sender, EventArgs e) // Push local hotkeys to global Zoomer.Hotkeys
+        private void button_Apply_Click(object sender, EventArgs e) // Push local hotkeys to global Globals.HotkeyEditorList
         {
-            ZoomerConfig.HotkeyEditorList = new List<Hotkey>();
-            foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys) ZoomerConfig.HotkeyEditorList.Add(entry.Value);
+            Globals.HotkeyEditorList = new List<Hotkey>();
+            foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys) Globals.HotkeyEditorList.Add(entry.Value);
             this.DialogResult = DialogResult.OK;
         }
         private void button_Cancel_Click(object sender, EventArgs e) // No changes to global Zoomer.Hotkeys
