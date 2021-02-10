@@ -35,7 +35,7 @@
             this.textBox_CustomHotkey = new System.Windows.Forms.TextBox();
             this.listBox_Hotkeys = new System.Windows.Forms.ListBox();
             this.button_Cancel = new System.Windows.Forms.Button();
-            this.button_Apply = new System.Windows.Forms.Button();
+            this.button_Save = new System.Windows.Forms.Button();
             this.button_Remove = new System.Windows.Forms.Button();
             this.button_Add = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
@@ -60,7 +60,7 @@
             this.groupBox1.Controls.Add(this.textBox_CustomHotkey);
             this.groupBox1.Controls.Add(this.listBox_Hotkeys);
             this.groupBox1.Controls.Add(this.button_Cancel);
-            this.groupBox1.Controls.Add(this.button_Apply);
+            this.groupBox1.Controls.Add(this.button_Save);
             this.groupBox1.Controls.Add(this.button_Remove);
             this.groupBox1.Controls.Add(this.button_Add);
             this.groupBox1.Controls.Add(this.label2);
@@ -110,15 +110,15 @@
             this.button_Cancel.UseVisualStyleBackColor = true;
             this.button_Cancel.Click += new System.EventHandler(this.button_Cancel_Click);
             // 
-            // button_Apply
+            // button_Save
             // 
-            this.button_Apply.Location = new System.Drawing.Point(199, 204);
-            this.button_Apply.Name = "button_Apply";
-            this.button_Apply.Size = new System.Drawing.Size(56, 39);
-            this.button_Apply.TabIndex = 8;
-            this.button_Apply.Text = "Apply";
-            this.button_Apply.UseVisualStyleBackColor = true;
-            this.button_Apply.Click += new System.EventHandler(this.button_Apply_Click);
+            this.button_Save.Location = new System.Drawing.Point(199, 204);
+            this.button_Save.Name = "button_Save";
+            this.button_Save.Size = new System.Drawing.Size(56, 39);
+            this.button_Save.TabIndex = 8;
+            this.button_Save.Text = "Save";
+            this.button_Save.UseVisualStyleBackColor = true;
+            this.button_Save.Click += new System.EventHandler(this.button_Save_Click);
             // 
             // button_Remove
             // 
@@ -196,7 +196,7 @@
         private System.Windows.Forms.ComboBox comboBox_Action;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button button_Cancel;
-        private System.Windows.Forms.Button button_Apply;
+        private System.Windows.Forms.Button button_Save;
         private System.Windows.Forms.ListBox listBox_Hotkeys;
         private System.Windows.Forms.TextBox textBox_CustomAction;
         private System.Windows.Forms.TextBox textBox_CustomHotkey;

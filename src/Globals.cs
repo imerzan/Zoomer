@@ -7,7 +7,6 @@ namespace Zoomer
     {
         public const string WindowTitle = "Zoomer";
         public const string RegPath = @"SOFTWARE\Zoomer";
-        public static List<Hotkey> HotkeyEditorList; // Used by HotkeyEditor.cs
         public static readonly Dictionary<byte, string> VirtualKeys = new Dictionary<byte, string>() // Pre-Defined Keylist
         {
             // https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
@@ -41,5 +40,10 @@ namespace Zoomer
             [0x27] = "RIGHT",
             [0x28] = "DOWN",
         };
+    }
+    public enum OperatingMode : int
+    {
+        Client = 0,
+        Server = 1
     }
 }

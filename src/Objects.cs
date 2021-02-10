@@ -18,7 +18,7 @@ namespace Zoomer
         public string IpAddress { get; private set; }
         public int Port { get; private set; }
         public string WOL_MacAddress { get; private set; }
-        public string Mode { get; private set; }
+        public OperatingMode Mode { get; private set; }
         public ZoomerClient Client { get; private set; }
         private ZoomerServer Server { get; set; }
         public WakeOnLan WOL { get; private set; }
@@ -30,7 +30,7 @@ namespace Zoomer
             this.IsReady = false;
             this.Handle = hwnd;
             this.Port = 0;
-            this.Mode = "CLIENT";
+            this.Mode = OperatingMode.Client;
             this.LoadConfig();
         }
         private void LoadConfig() // Read existing configuration (if exists) from Registry.
@@ -43,7 +43,7 @@ namespace Zoomer
                     this.IpAddress = (string)read.GetValue("ipaddress");
                     this.Port = (int)read.GetValue("port");
                     this.WOL_MacAddress = (string)read.GetValue("macaddress");
-                    this.Mode = (string)read.GetValue("lastmode");
+                    this.Mode = (OperatingMode)read.GetValue("mode");
                     read.Close();
                 }
                 using (RegistryKey hotkeys = Registry.CurrentUser.OpenSubKey(Globals.RegPath + @"\Hotkeys")) // Get hotkey config
@@ -121,11 +121,11 @@ namespace Zoomer
                     this.WOL = new WakeOnLan(this.WOL_MacAddress); // WOL enabled for both modes
                     switch (this.Mode)
                     {
-                        case "CLIENT":
+                        case OperatingMode.Client:
                             this.SetHotkeys(true);
                             this.Client = new ZoomerClient(this.IpAddress, this.Port);
                             break;
-                        case "SERVER":
+                        case OperatingMode.Server:
                             this.SetHotkeys(false);
                             this.Server = new ZoomerServer(this.Port);
                             break;
@@ -138,7 +138,7 @@ namespace Zoomer
                 MessageBox.Show(ex.ToString(), Globals.WindowTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        public async Task Install(string ip, string port, string mac, string mode) // Apply current configuration and write to Registry.
+        public async Task Install(string ip, string port, string mac, OperatingMode mode, Dictionary<byte, Hotkey> editorhotkeys) // Apply current configuration and write to Registry.
         {
             try
             {
@@ -152,7 +152,7 @@ namespace Zoomer
                     write.SetValue("ipaddress", this.IpAddress);
                     write.SetValue("port", this.Port);
                     write.SetValue("macaddress", this.WOL_MacAddress);
-                    write.SetValue("lastmode", this.Mode);
+                    write.SetValue("mode", (int)this.Mode);
                     write.Close();
                 }
                 using (RegistryKey hotkeys = Registry.CurrentUser.CreateSubKey(Globals.RegPath + @"\Hotkeys")) // Save hotkey configuration
@@ -162,18 +162,17 @@ namespace Zoomer
                     {
                         hotkeys.DeleteValue(value);
                     }
-                    if (Globals.HotkeyEditorList?.Count > 0) // Editor list has new entries, push these first
+                    if (editorhotkeys?.Count > 0) // Editor list has new entries, push these first
                     {
                         this.Hotkeys = new Dictionary<byte, Hotkey>();
-                        foreach (Hotkey hotkey in Globals.HotkeyEditorList) this.Hotkeys.Add(hotkey.hotkey.Value, hotkey); // Push entries to main hotkey dict
-                        Globals.HotkeyEditorList = new List<Hotkey>(); // All Done - Empty Editor List
+                        foreach (KeyValuePair<byte, Hotkey> entry in editorhotkeys) this.Hotkeys.Add(entry.Key, entry.Value); // Push entries to main hotkey dict
                     }
                     int i = 1;
                     if (this.Hotkeys != null) foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys) // Write new hotkeys
-                        {
-                            hotkeys.SetValue(i.ToString(), entry.Key.ToString() + "," + entry.Value.action.Value.ToString()); // Delimit Hotkey & Action by comma
-                            i++;
-                        }
+                    {
+                        hotkeys.SetValue("hotkey" + i.ToString(), entry.Key.ToString() + "," + entry.Value.action.Value.ToString()); // Delimit Hotkey & Action by comma
+                        i++;
+                    }
                     hotkeys.Close();
                 }
                 this.IsReady = true;
@@ -201,9 +200,8 @@ namespace Zoomer
                 this.IpAddress = null;
                 this.Port = 0;
                 this.WOL_MacAddress = null;
-                this.Mode = "CLIENT";
+                this.Mode = OperatingMode.Client;
                 this.Hotkeys = new Dictionary<byte, Hotkey>();
-                Globals.HotkeyEditorList = new List<Hotkey>();
                 this.IsReady = false;
             }
             catch (Exception ex) // Handle general exceptions, show exception info to user.

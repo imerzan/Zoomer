@@ -8,6 +8,8 @@ namespace Zoomer
     public partial class Zoomer : Form
     {
         private ZoomerConfig Config;
+        private OperatingMode Mode = OperatingMode.Client; // GUI RadioButtons State (mode)
+        private Dictionary<byte, Hotkey> EditorHotkeys = new Dictionary<byte, Hotkey>();
         private bool allowshowdisplay = false;
         // Form 1 Main Page 
         protected override void SetVisibleCore(bool value) // Hide window by default on startup
@@ -74,10 +76,8 @@ namespace Zoomer
                 var dialog = MessageBox.Show("Are you sure you want to overwrite the existing configuration?", Globals.WindowTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (dialog != DialogResult.Yes) return;
             }
-            string mode = null;
-            if (this.radioButton_Client.Checked) mode = "CLIENT";
-            if (this.radioButton_Server.Checked) mode = "SERVER";
-            await this.Config.Install(this.textBox_IP.Text, this.textBox_Port.Text, this.textBox_MAC.Text, mode);
+            await this.Config.Install(this.textBox_IP.Text, this.textBox_Port.Text, this.textBox_MAC.Text, this.Mode, this.EditorHotkeys);
+            this.EditorHotkeys = new Dictionary<byte, Hotkey>(); // Clear editor hotkeys
             this.GuiUpdate();
         }
         private async void button_Uninstall_Click(object sender, EventArgs e) // GUI 'uninstall' button click
@@ -85,6 +85,7 @@ namespace Zoomer
             var dialog = MessageBox.Show("Are you sure you want to uninstall?", Globals.WindowTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dialog != DialogResult.Yes) return;
             await this.Config.Uninstall();
+            this.EditorHotkeys = new Dictionary<byte, Hotkey>(); // Clear editor hotkeys
             this.GuiUpdate();
         }
         private async void button_WOLSend_Click(object sender, EventArgs e) // GUI Wake On Lan 'Send' button click - send WakeOnLan broadcast
@@ -99,6 +100,7 @@ namespace Zoomer
             this.Enabled = true; // Enable parent form upon exit
             if (dialog == DialogResult.OK)
             {
+                this.EditorHotkeys = EditHotkeys.Hotkeys; // Get hotkeys from editor
                 this.button_Install.Enabled = true;
                 this.button_Install.Text = "Update";
                 MessageBox.Show("Hotkeys set! Click Update to save configuration.", Globals.WindowTitle, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -137,6 +139,7 @@ namespace Zoomer
         {
             if (this.radioButton_Client.Checked)
             {
+                this.Mode = OperatingMode.Client;
                 this.textBox_IP.Enabled = true;
                 this.button_Hotkeys.Enabled = true;
                 if (!this.button_Install.Enabled)
@@ -151,6 +154,7 @@ namespace Zoomer
         {
             if (this.radioButton_Server.Checked)
             {
+                this.Mode = OperatingMode.Server;
                 this.textBox_IP.Enabled = false;
                 this.button_Hotkeys.Enabled = false;
                 if (!this.button_Install.Enabled)
@@ -186,10 +190,10 @@ namespace Zoomer
             this.textBox_MAC.Text = this.Config.WOL_MacAddress;
             switch (this.Config.Mode)
             {
-                case "CLIENT":
+                case OperatingMode.Client:
                     this.radioButton_Client.Checked = true;
                     break;
-                case "SERVER":
+                case OperatingMode.Server:
                     this.radioButton_Server.Checked = true;
                     break;
             }

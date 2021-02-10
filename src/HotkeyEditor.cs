@@ -6,7 +6,7 @@ namespace Zoomer
 {
     public partial class HotkeyEditor : Form
     {
-        private Dictionary<byte, Hotkey> Hotkeys; // Localized hotkey dict
+        public Dictionary<byte, Hotkey> Hotkeys { get; private set; } // Localized hotkey dict
         public HotkeyEditor(Dictionary<byte, Hotkey> in_hotkeys)
         {
             InitializeComponent();
@@ -30,10 +30,8 @@ namespace Zoomer
             }
         }
         // Button Controls
-        private void button_Apply_Click(object sender, EventArgs e) // Push local hotkeys to global Globals.HotkeyEditorList
+        private void button_Save_Click(object sender, EventArgs e) // Save Hotkeys
         {
-            Globals.HotkeyEditorList = new List<Hotkey>();
-            foreach (KeyValuePair<byte, Hotkey> entry in this.Hotkeys) Globals.HotkeyEditorList.Add(entry.Value);
             this.DialogResult = DialogResult.OK;
         }
         private void button_Cancel_Click(object sender, EventArgs e) // No changes to global Zoomer.Hotkeys
