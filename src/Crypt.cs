@@ -9,11 +9,11 @@ namespace Zoomer
     internal static class Crypt
     {
         private const string Password = @"EX1^64P#NNYv?^p:Els-4a6>;EAlYU";
-        private static HashSet<byte[]> UsedHashes = new HashSet<byte[]>();
+        private static HashSet<byte[]> UsedHashes = new HashSet<byte[]>(new bytearraycomparer());
 
         public static byte[] Encrypt(byte[] _plaintext)
         {
-            using (var psk = new Rfc2898DeriveBytes(Password, 8, 16))
+            using (var psk = new Rfc2898DeriveBytes(Password, 8, 1000))
             using (var aes = new AesManaged() { Mode = CipherMode.CBC, KeySize = 256 })
             using (var ms = new MemoryStream())
             {
@@ -44,7 +44,7 @@ namespace Zoomer
         {
             byte[] _hash = _ciphertext.Take(64).ToArray();
             byte[] _payload = _ciphertext.Skip(64).ToArray();
-            using (var psk = new Rfc2898DeriveBytes(Password, _payload.Take(8).ToArray(), 16))
+            using (var psk = new Rfc2898DeriveBytes(Password, _payload.Take(8).ToArray(), 1000))
             using (var aes = new AesManaged() { Mode = CipherMode.CBC, KeySize = 256 })
             using (var ms = new MemoryStream())
             {
@@ -69,6 +69,23 @@ namespace Zoomer
                 }
                 return ms.ToArray();
             }
+        }
+    }
+    public class bytearraycomparer : IEqualityComparer<byte[]> // Compare if two byte arrays are equal
+    {
+        public bool Equals(byte[] a, byte[] b)
+        {
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++)
+                if (a[i] != b[i]) return false;
+            return true;
+        }
+        public int GetHashCode(byte[] a)
+        {
+            uint b = 0;
+            for (int i = 0; i < a.Length; i++)
+                b = ((b << 23) | (b >> 9)) ^ a[i];
+            return unchecked((int)b);
         }
     }
 }
